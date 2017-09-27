@@ -1,0 +1,24 @@
+goto
+~/geant/Hadr06
+
+to make environmental variables:
+$ source /home/geant4.10.01.p01-install/bin/geant4.sh
+
+building Hadr06:
+in directory /home/vodib/geant/Hadr06/,
+$ mkdir Hadr06_build
+$ cd Hadr06_build
+$ cmake -DGeant4_DIR=/home/geant4.10.01.p01-install/lib/Geant4-10.1.1/ ../
+$ make -j 4 Hadr06
+-that make executable Hadr06 in Hadr06_build directory
+if you edited .cc or .hh file, do:
+$ make -j 4 Hadr06
+
+run in interactive mode with visualization:
+$ ./Hadr06
+
+run in batch mode to create root file:
+$ ./Hadr06 runx.mac > outx.txt
+
+/analysis/h2/set 1  40 0 400 km none linear 100  0 5000 MeV none linear #mu E vs R xy-plane
+/analysis/h2/set 2  40 -3620 3620 km none linear 40  -3620 3620 km none linear #mu E vs R xy-plane

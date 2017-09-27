@@ -1,0 +1,154 @@
+//
+// ********************************************************************
+// * License and Disclaimer                                           *
+// *                                                                  *
+// * The  Geant4 software  is  copyright of the Copyright Holders  of *
+// * the Geant4 Collaboration.  It is provided  under  the terms  and *
+// * conditions of the Geant4 Software License,  included in the file *
+// * LICENSE and available at  http://cern.ch/geant4/license .  These *
+// * include a list of copyright holders.                             *
+// *                                                                  *
+// * Neither the authors of this software system, nor their employing *
+// * institutes,nor the agencies providing financial support for this *
+// * work  make  any representation or  warranty, express or implied, *
+// * regarding  this  software system or assume any liability for its *
+// * use.  Please see the license in the file  LICENSE  and URL above *
+// * for the full disclaimer and the limitation of liability.         *
+// *                                                                  *
+// * This  code  implementation is the result of  the  scientific and *
+// * technical work of the GEANT4 collaboration.                      *
+// * By using,  copying,  modifying or  distributing the software (or *
+// * any work based  on the software)  you  agree  to acknowledge its *
+// * use  in  resulting  scientific  publications,  and indicate your *
+// * acceptance of all terms of the Geant4 Software license.          *
+// ********************************************************************
+//
+/// \file hadronic/Hadr03/src/SteppingAction.cc
+/// \brief Implementation of the SteppingAction class
+//
+// $Id: SteppingAction.cc 71404 2013-06-14 16:56:38Z maire $
+// 
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+#include "SteppingAction.hh"
+#include "Run.hh"
+#include "EventAction.hh"
+#include "HistoManager.hh"
+#include "DetectorConstruction.hh"                         
+
+#include "G4RunManager.hh"
+#include "G4SystemOfUnits.hh"
+#include "G4PhysicalConstants.hh"
+#include "G4UnitsTable.hh"
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+SteppingAction::SteppingAction(EventAction* event)
+: G4UserSteppingAction(), fEventAction(event)
+{
+  istp=0;
+  fRadius = 3.39e3*km;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+SteppingAction::~SteppingAction()
+{ }
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void SteppingAction::UserSteppingAction(const G4Step* aStep)
+{
+  // count processes
+  // 
+  const G4StepPoint* endPoint = aStep->GetPostStepPoint();
+  const G4VProcess* process   = endPoint->GetProcessDefinedStep();
+  /*Run* run = static_cast<Run*>(
+        G4RunManager::GetRunManager()->GetNonConstCurrentRun());
+	run->CountProcesses(process);*/
+  
+  /*// energy deposit
+  //
+  G4double edepStep = aStep->GetTotalEnergyDeposit();
+  if (edepStep <= 0.) return; 
+  fEventAction->AddEdep(edepStep);*/
+  
+ //
+  istp++;
+ G4ThreeVector prePoint  = aStep->GetPreStepPoint() ->GetPosition();
+ G4ThreeVector postPoint = aStep->GetPostStepPoint()->GetPosition();
+ G4ThreeVector point = prePoint + G4UniformRand()*(postPoint - prePoint);
+ G4ThreeVector displace = aStep->GetDeltaPosition();
+ G4double range = displace.mag();
+ 
+ /*G4double r = point.mag();
+ G4AnalysisManager* analysisManager = G4AnalysisManager::Instance();
+ analysisManager->FillH1(2, r, edepStep);*/
+
+ G4Track *track = aStep->GetTrack();
+ G4String name   = track->GetDefinition()->GetParticleName();
+ //G4double charge = track->GetDefinition()->GetPDGCharge();
+ G4String volumeName = track->GetVolume()->GetName();
+ G4String type   = track->GetDefinition()->GetParticleType();      
+ G4double energy = track->GetKineticEnergy();
+ G4double xtrack = track->GetPosition().x();
+ G4double ytrack = track->GetPosition().y();
+ G4double ztrack = track->GetPosition().z();
+ G4double time   = track->GetGlobalTime();
+ 
+ G4ThreeVector dir = track->GetMomentumDirection();
+ G4double theta  = std::acos(dir.z());
+ G4double r1 = prePoint.mag();
+ G4double r2 = postPoint.mag();
+ G4double rxy = sqrt(xtrack*xtrack+ytrack*ytrack);
+
+ //if (r2>fRadius) {
+ if (r1>fRadius+1*m && r2<=fRadius+1*m) {
+ //if (r1>fRadius && r2<=fRadius) {
+ //if (r1>3574.*km && r2<r1) {
+ //if (r1>0.*km && r2<r1) {
+
+   //if ((fRadius-r2)/km>1. && (fRadius-r1)/km>1.)
+
+
+   if ((fRadius-r2)/km>1.)  G4cout<<istp<<": "<<name<<"  r="<<r1/km<<"-"<<r2/km<<" km  xyz="<<" / "<<xtrack/km<<" / "<<ytrack/km<<" / "<<ztrack/km<<"  R-r2="<<(fRadius-r2)/km<<"  R-r1="<<(fRadius-r1)/km<<G4endl;
+ 
+   //G4cout<<istp<<": stepXYZ= "<<prePoint[0]/km<<"km  "<<postPoint[0]/km<<"km | "<<prePoint[1]/km<<"km  "<<postPoint[1]/km<<"km | "<<prePoint[2]/km<<"km  "<<postPoint[2]/km<<"km"<<"\n  "<<name<<"  "<<energy<<"  "<<volumeName<<"  r="<<r1/km<<"-"<<r2/km<<"km  dir="<<dir[0]<<" "<<dir[1]<<" "<<dir[2]<<"  theta="<<theta*180./pi<<G4endl;
+   
+   //if (name=="mu+" || name=="mu-") {
+   //if (name=="e-" || name=="e-") {
+   if (name=="e-") {
+   //if (name=="proton") {
+     G4AnalysisManager::Instance()->FillH1(1,energy);
+     G4AnalysisManager::Instance()->FillH1(2,theta*180./pi);
+     G4AnalysisManager::Instance()->FillH1(3,r1);
+     G4AnalysisManager::Instance()->FillH1(4,r2);
+     G4AnalysisManager::Instance()->FillH1(5,rxy);
+     G4AnalysisManager::Instance()->FillH1(6,time);
+     G4AnalysisManager::Instance()->FillH1(7,range);
+     G4AnalysisManager::Instance()->FillH2(1,rxy,energy);
+     //if (energy>10*MeV) { // detectable?
+       G4AnalysisManager::Instance()->FillH2(2,xtrack,ytrack);
+       //}
+   }
+   else if (name=="proton") {
+     G4AnalysisManager::Instance()->FillH1(8,energy);
+     //if (energy>100*MeV) { // detectable?
+       G4AnalysisManager::Instance()->FillH2(3,xtrack,ytrack);
+       //}
+   }
+   else if (name=="pi+" || name=="pi-") {
+     G4AnalysisManager::Instance()->FillH1(9,energy);
+     //if (energy>50*MeV) { // detectable?
+       G4AnalysisManager::Instance()->FillH2(4,xtrack,ytrack);
+       //}
+   }
+ }
+ 
+//"  x="<<xtrack/km<<"km  y="<<ytrack/km<<"km  z="<<ztrack/km<<"km"<< G4endl;
+   
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+
